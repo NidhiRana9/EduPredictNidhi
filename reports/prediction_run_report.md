@@ -9,7 +9,7 @@
 
 | Attribute | Details |
 |---|---|
-| **Execution Date & Time** | `2026-10-17 04:14:14 UTC` |
+| **Execution Date & Time** | `2026-10-17 05:32:43 UTC` |
 | **Model Version** | `v1` |
 | **Model Artifacts Used** | `decision_tree_classifier.joblib, random_forest_classifier.joblib, random_forest_regressor.joblib` |
 | **Database & Collection** | `edupredict_db.student_predictions` |
@@ -21,11 +21,11 @@
 
 | Processing Metric | Count |
 |---|---|
-| **Total Records Attempted** | **1** |
-| **Successful Predictions** | **1** (100.0%) |
+| **Total Records Attempted** | **5** |
+| **Successful Predictions** | **5** (100.0%) |
 | **Failed Records** | **0** |
 | **MongoDB Upserted Records** | **0** |
-| **MongoDB Matched / Updated Records** | **1** |
+| **MongoDB Matched / Updated Records** | **5** |
 
 ---
 
@@ -34,6 +34,10 @@
 | Student ID | Row ID | Decision Tree Risk | Random Forest Risk | RF Risk Probability | Estimated G3 (0–20) |
 |---|---|---|---|---|---|
 | `6ad2e6b67a5f508fb2593a06` | 1 | Passing | Passing | 28.0% | 9.75 |
+| `6ad2e6b67a5f508fb2593a07` | 2 | At-Risk | Passing | 39.3% | 9.89 |
+| `6ad2e6b67a5f508fb2593a08` | 3 | Passing | Passing | 41.0% | 9.48 |
+| `6ad2e6b67a5f508fb2593a09` | 4 | At-Risk | At-Risk | 62.6% | 9.81 |
+| `6ad2e6b67a5f508fb2593a0a` | 5 | Passing | Passing | 28.3% | 9.19 |
 
 ---
 
