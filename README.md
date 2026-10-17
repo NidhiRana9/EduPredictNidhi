@@ -2,8 +2,10 @@
 
 EduPredict is an end-to-end Machine Learning and Data Analysis system designed to analyze student demographic and academic factors, predict student performance, and provide actionable insights for educators.
 
-> **Project Phase:** **Phase 1 — Project Setup and MongoDB Connectivity** (Currently active).  
-> In this phase, the workspace foundation, Python virtual environment, core dependencies, and a reusable, read-only MongoDB connection module are established and verified.
+> **Current Status:**  
+> - **Phase 1: Project Setup and MongoDB Connectivity** (Completed & Verified)  
+> - **Phase 2: Dataset Validation and MongoDB Import** (Completed & Verified)  
+> - **Phase 3: Exploratory Data Analysis & Feature Preprocessing** (Completed & Verified)
 
 ---
 
@@ -12,11 +14,11 @@ EduPredict is an end-to-end Machine Learning and Data Analysis system designed t
 - **Language:** Python (3.10+; verified with Python 3.14)
 - **Database:** MongoDB Community Server (local unauthenticated instance on port `27017`)
 - **Database Driver:** PyMongo (`>=4.6.0`)
-- **Data Manipulation:** pandas (`>=2.2.0`)
-- **Machine Learning:** scikit-learn (`>=1.4.0`)
+- **Data Manipulation:** pandas (`>=2.2.0`), NumPy (`>=2.3.0`)
+- **Machine Learning & Preprocessing:** scikit-learn (`>=1.4.0`)
 - **Model Persistence:** joblib (`>=1.3.0`)
 - **Visualization:** matplotlib (`>=3.8.0`)
-- **Testing:** Python standard library `unittest` (no extra testing dependencies required)
+- **Testing:** Python standard library `unittest` (14 automated tests passed)
 
 ---
 
@@ -25,236 +27,173 @@ EduPredict is an end-to-end Machine Learning and Data Analysis system designed t
 ```text
 EduPredict/
 │
-├── data/                      # Raw and processed CSV datasets (populated in Phase 2)
+├── data/
+│   ├── .gitkeep
+│   └── student-mat-synthetic.csv # Synthetic student dataset (5,000 rows, 33 columns)
+│
+├── src/
+│   ├── __init__.py               # Package initializer
+│   ├── database.py               # Reusable MongoDB client & collections manager
+│   ├── import_data.py            # CSV validator and idempotent MongoDB importer
+│   ├── analyze_data.py           # MongoDB data retriever, EDA charts & report generator
+│   └── preprocessing.py          # Feature partitioning, pipeline builder & train/test splitter
+│
+├── models/                       # Serialized trained machine learning models (Phase 4)
 │   └── .gitkeep
 │
-├── src/                       # Application source code
-│   ├── __init__.py            # Package initializer
-│   └── database.py            # Reusable MongoDB connection manager and collections
+├── results/                      # Metric outputs, predictions, and reports
+│   ├── charts/                   # 6 Generated EDA visualizations (.png)
+│   │   ├── absences_vs_g3.png
+│   │   ├── at_risk_distribution.png
+│   │   ├── failures_vs_g3.png
+│   │   ├── g3_distribution.png
+│   │   ├── numeric_correlation_heatmap.png
+│   │   └── studytime_distribution.png
+│   ├── cleaned_students.csv      # Exported clean analysis dataset (5,000 rows)
+│   └── data_quality_report.json  # Machine-readable data quality report
 │
-├── models/                    # Serialized trained machine learning models
-│   └── .gitkeep
+├── reports/                      # Documentation and analysis reports
+│   └── data_analysis_report.md   # Comprehensive Phase 3 EDA report
 │
-├── results/                   # Metric outputs, predictions, and reports
-│   ├── charts/                # Generated visualizations and plots
-│   │   └── .gitkeep
-│   └── .gitkeep
+├── tests/
+│   ├── test_database.py          # Phase 1: MongoDB connectivity and handle tests
+│   ├── test_import_data.py       # Phase 2: CSV validation and idempotent import tests
+│   └── test_preprocessing.py     # Phase 3: Feature separation, pipeline & split tests
 │
-├── reports/                   # Documentation and final assignment reports
-│   └── .gitkeep
-│
-├── tests/                     # Test suite
-│   └── test_database.py       # MongoDB connectivity and handle verification tests
-│
-├── .gitignore                 # Git ignore rules for caches, venv, and large artifacts
-├── requirements.txt           # Project dependencies and version bounds
-└── README.md                  # Project overview and setup documentation
+├── .gitignore                    # Git ignore rules for caches, venv, and large artifacts
+├── requirements.txt              # Project dependencies and version bounds
+└── README.md                     # Project overview and setup documentation
 ```
 
-### Directory Roles
-- **`data/`**: Stores raw CSV datasets and cleaned datasets for student tracking.
-- **`src/`**: Houses production Python code, modules, and utilities.
-- **`models/`**: Stores saved model files (`.joblib` or `.pkl`) for reuse in predictions.
-- **`results/` & `results/charts/`**: Stores training metrics, prediction logs, and data charts.
-- **`reports/`**: Contains academic assignment submissions and technical reports.
-- **`tests/`**: Contains automated tests to ensure components behave correctly.
+---
+
+## 3. Dataset Overview
+
+### Important Dataset Notice
+> **Notice:** The dataset used in this project (`data/student-mat-synthetic.csv` and MongoDB collection `students`) is **entirely synthetic**. It was generated to model the feature distribution and schema of the benchmark UCI Student Performance dataset (P. Cortez and A. Silva, 2008) for academic modeling purposes. It contains **no real, personally identifiable student records**.
+
+### Specifications & Quality Summary
+- **Source:** MongoDB `edupredict_db.students` (`dataset_source: "synthetic"`)
+- **Total Records:** 5,000 documents
+- **Missing / Null Values:** 0 across all fields
+- **Duplicate Rows:** 0 full duplicates
+- **Passing Threshold:** `G3 >= 10`
+- **At-Risk Students (`G3 < 10`):** 2,369 students (47.38%)
+- **Not At-Risk Students (`G3 >= 10`):** 2,631 students (52.62%)
 
 ---
 
-## 3. Prerequisites
-
-Before running EduPredict, ensure you have installed:
-
-1. **Python 3.10 or newer**:
-   - Check in terminal:
-     ```powershell
-     python --version
-     ```
-2. **MongoDB Community Server**:
-   - Running locally on the default port `27017`.
-   - Default connection URI: `mongodb://localhost:27017/`
-
----
-
-## 4. Virtual Environment Setup
-
-Using a virtual environment isolates project dependencies from your global Python installation.
-
-### A. Create the Virtual Environment
+## 4. Virtual Environment & Setup
 
 Run from the root of the `EduPredict` project:
 
-**Windows PowerShell or Command Prompt:**
+### A. Create Environment
 ```powershell
 python -m venv venv
 ```
 
-This creates a local `venv/` folder containing an isolated Python interpreter and pip.
-
-### B. Activate the Environment
-
-#### Option 1: Windows PowerShell
+### B. Install Dependencies
 ```powershell
-.\venv\Scripts\Activate.ps1
+.\venv\Scripts\pip.exe install -r requirements.txt
 ```
 
-> **Note on PowerShell Execution Policy:**  
-> If PowerShell displays an error such as `cannot be loaded because running scripts is disabled on this system`, you do **NOT** need to lower your system-wide security settings.  
-> You can simply bypass the activation step and run the virtual environment's executables directly:
-> ```powershell
-> .\venv\Scripts\python.exe <script_path>
-> .\venv\Scripts\pip.exe <command>
-> ```
-> Alternatively, enable script execution for only the current PowerShell window:
+> **Note on PowerShell Script Execution:**  
+> If PowerShell blocks `.ps1` script activation, you can call executables directly (`.\venv\Scripts\python.exe`) or bypass script execution for the active terminal session:
 > ```powershell
 > Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 > .\venv\Scripts\Activate.ps1
 > ```
 
-#### Option 2: Windows Command Prompt (`cmd.exe`)
-```cmd
-venv\Scripts\activate.bat
-```
-
-### C. Verify Virtual Environment
-Confirm that Python points to the project's `venv`:
-
-**PowerShell:**
-```powershell
-Get-Command python | Select-Object -ExpandProperty Source
-```
-**Command Prompt:**
-```cmd
-where python
-```
-Expected path: `<path-to-EduPredict>\venv\Scripts\python.exe`.
-
 ---
 
-## 5. Installing Dependencies
+## 5. Running the Pipeline (Phases 1, 2, and 3)
 
-Install the pinned requirements inside the virtual environment:
-
-**Using active virtual environment:**
-```powershell
-pip install -r requirements.txt
-```
-
-**Direct invocation (recommended if activation is bypassed):**
-```powershell
-.\venv\Scripts\pip.exe install -r requirements.txt
-```
-
-To verify the installation:
-```powershell
-.\venv\Scripts\python.exe -c "import pandas, pymongo, sklearn, joblib, matplotlib; print('All libraries imported successfully!')"
-```
-
----
-
-## 6. Checking MongoDB Server Status
-
-MongoDB must be running on your system for EduPredict to connect.
-
-### In Windows PowerShell:
-Check if the MongoDB service is running:
-```powershell
-Get-Service -Name MongoDB
-```
-Or check if port 27017 is listening:
-```powershell
-Test-NetConnection -ComputerName localhost -Port 27017
-```
-
-If the service status is `Stopped`, start it with Administrator privileges:
-```powershell
-Start-Service MongoDB
-```
-
-### In Windows Command Prompt:
-Check service status:
-```cmd
-sc query MongoDB
-```
-Start the service (Run as Administrator):
-```cmd
-net start MongoDB
-```
-
----
-
-## 7. Executing the MongoDB Connectivity Test
-
-EduPredict includes a dedicated test to verify connection health without inserting, modifying, or deleting any documents.
-
-### Method 1: Run the Standalone Test Runner (Recommended)
-
-**PowerShell:**
+### Step 1: Verify MongoDB Connection (Phase 1)
 ```powershell
 .\venv\Scripts\python.exe tests/test_database.py
 ```
 
-**Command Prompt:**
-```cmd
-venv\Scripts\python.exe tests\test_database.py
+### Step 2: Validate & Import Dataset into MongoDB (Phase 2)
+```powershell
+.\venv\Scripts\python.exe -m src.import_data
 ```
+- Performs idempotent bulk upsert on `(dataset_source, source_row_id)`.
+- Rerunning the script updates in-place without duplicating documents.
 
-### Method 2: Run via Python's Unittest Framework
+### Step 3: Run Exploratory Data Analysis & Preprocessing (Phase 3)
+```powershell
+.\venv\Scripts\python.exe -m src.analyze_data
+```
+This script:
+1. Retrieves only synthetic documents from MongoDB (excluding internal `_id`).
+2. Validates types, uniqueness, and grade bounds (`0 <= G1, G2, G3 <= 20`).
+3. Generates 6 high-resolution charts in `results/charts/`:
+   - `g3_distribution.png`: Histogram of final grades with mean (9.76) and median (10.0).
+   - `studytime_distribution.png`: Student counts across study time tiers.
+   - `absences_vs_g3.png`: Jittered scatter plot and trend line of school absences vs. final grade.
+   - `failures_vs_g3.png`: Boxplot showing performance decline across past failure counts.
+   - `at_risk_distribution.png`: Bar chart of at-risk (47.4%) vs. passing (52.6%) student counts.
+   - `numeric_correlation_heatmap.png`: Full correlation matrix across all 16 numeric variables.
+4. Exports machine-readable report: `results/data_quality_report.json`.
+5. Exports technical markdown report: `reports/data_analysis_report.md`.
+6. Exports cleaned modeling dataset: `results/cleaned_students.csv` (preserves all 5,000 rows with `at_risk` target).
+
+---
+
+## 6. Machine Learning Preprocessing Design (`src/preprocessing.py`)
+
+Phase 3 establishes clean, reusable feature pipelines for later training in Phase 4:
+
+### A. Target Variable Separation
+- **Binary Classification Target:** `at_risk = 1` if `G3 < 10` else `0`.
+- **Regression Target:** Numerical `G3` (0–20 scale).
+
+### B. Target Leakage Prevention
+To ensure authentic early-warning predictions before exams occur:
+- **Strictly Excluded Columns:** `G1`, `G2`, `G3`, `at_risk`, `_id`, `source_row_id`, `dataset_source`.
+- **Remaining Predictors (30 Features):**
+  - **13 Numeric Features:** `age`, `Medu`, `Fedu`, `traveltime`, `studytime`, `failures`, `famrel`, `freetime`, `goout`, `Dalc`, `Walc`, `health`, `absences`.
+  - **17 Categorical Features:** `school`, `sex`, `address`, `famsize`, `Pstatus`, `Mjob`, `Fjob`, `reason`, `guardian`, `schoolsup`, `famsup`, `paid`, `activities`, `nursery`, `higher`, `internet`, `romantic`.
+
+### C. Pipeline Architecture (Scikit-Learn ColumnTransformer)
+- **Numeric Pipeline:** `SimpleImputer(strategy="median")` + `StandardScaler()`.
+- **Categorical Pipeline:** `SimpleImputer(strategy="most_frequent")` + `OneHotEncoder(handle_unknown="ignore", sparse_output=False)`.
+- **Strict Rule:** Preprocessing transformers remain **un-fitted** in Phase 3. They will only be fitted on training splits in Phase 4 to prevent data leakage.
+
+### D. Reproducible Data Splitting
+- `split_dataset(X, y, test_size=0.2, random_state=42, stratify=True)`
+- Partitions 5,000 samples into 4,000 train (80%) and 1,000 test (20%) while preserving the exact 47.4% / 52.6% risk class ratio.
+
+---
+
+## 7. Automated Testing (14 Tests Passed)
+
+Run the complete test suite covering Phase 1, Phase 2, and Phase 3:
 
 **PowerShell:**
 ```powershell
-.\venv\Scripts\python.exe -m unittest tests/test_database.py
+.\venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
 **Command Prompt:**
 ```cmd
-venv\Scripts\python.exe -m unittest tests\test_database.py
+venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-### Method 3: Run Database Module Directly
-You can also run the database module directly for diagnostic output:
-```powershell
-.\venv\Scripts\python.exe src/database.py
-```
-
-### Expected Output
-When MongoDB is running and reachable, you will see:
-```text
-test_01_client_initialization ... ok
-test_02_database_ping ... ok
-test_03_database_selection ... ok
-test_04_collection_handles ... ok
-
-============================================================
- EduPredict: Phase 1 - MongoDB Connectivity Test Runner
-============================================================
-
-[PASS] MongoDB ping succeeded! Server is active and reachable.
-[PASS] Successfully selected target database: 'edupredict_db'.
-[PASS] Defined collection handles: ['students', 'predictions', 'model_evaluations'] (no documents written or modified).
-------------------------------------------------------------
-[SUCCESS] All database tests passed! MongoDB is properly configured.
-Project setup and Phase 1 database verification completed successfully.
-```
+### Test Suite Breakdown:
+- **`TestDatabaseConnection` (4 tests):** Client instantiation, MongoDB admin ping, database selection (`edupredict_db`), and non-destructive collection handles.
+- **`TestImportData` (5 tests):** CSV parsing (33 columns, delimiter), data sanitization, compound unique indexing, idempotency check (rerun count unchanged), and verification helper.
+- **`TestPreprocessing` (5 tests):** `at_risk` threshold logic (`G3 < 10`), feature leakage exclusion (`G1`, `G2`, `G3` excluded), feature type identification, un-fitted ColumnTransformer construction, and stratified train/test splitting.
 
 ---
 
-## 8. Common MongoDB Connection Errors and Fixes
+## 8. Next Steps (Phase 4 Preview)
 
-| Issue / Error | Cause | How to Fix |
-|---|---|---|
-| `ServerSelectionTimeoutError: localhost:27017: [WinError 10061] No connection could be made because the target machine actively refused it` | MongoDB server service is not running. | Start the service: <br>• PowerShell (Admin): `Start-Service MongoDB`<br>• CMD (Admin): `net start MongoDB` |
-| `Cannot be loaded because running scripts is disabled on this system` | Windows PowerShell Execution Policy restricts running `.ps1` scripts. | Use `.\venv\Scripts\python.exe` directly, or run: <br>`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` |
-| `ModuleNotFoundError: No module named 'pymongo'` | The command was run using the global Python interpreter instead of the virtual environment. | Ensure you invoke `.\venv\Scripts\python.exe` or activate `venv` first. |
-| `Connection refused on ::1 (IPv6)` | MongoDB is bound to IPv4 `127.0.0.1` by default on Windows. | The default URI `mongodb://localhost:27017/` in `src/database.py` automatically falls back to `127.0.0.1`. You can also specify `mongodb://127.0.0.1:27017/` directly if needed. |
-| MongoDB service not found in `Get-Service` | MongoDB Community Server is not installed. | Download and install MongoDB Community Server and MongoDB Compass from the official MongoDB website: [mongodb.com/try/download/community](https://www.mongodb.com/try/download/community). |
-
----
-
-## 9. Next Steps (Phase 2 Preview)
-
-Once Phase 1 is reviewed and approved:
-- **Phase 2:** Dataset acquisition, data schema inspection, and ingestion into the MongoDB `students` collection.
-- **Phase 3:** Exploratory Data Analysis (EDA) and feature preprocessing with pandas.
-- **Phase 4:** Model training (scikit-learn) and evaluation metrics storage.
-- **Phase 5:** Prediction pipeline and assignment reporting.
+Once Phase 3 is approved:
+- **Phase 4: Model Training and Evaluation**
+  - Fit preprocessing pipelines exclusively on `X_train`.
+  - Train classification models (Logistic Regression, Random Forest, Gradient Boosting) to predict `at_risk`.
+  - Train regression models (Ridge, Random Forest Regressor) to predict final grade `G3`.
+  - Evaluate with Accuracy, Precision, Recall, F1, ROC-AUC (classification) and MAE, RMSE, R² (regression).
+  - Persist trained models to `models/` using `joblib`.
+  - Log evaluation metrics into MongoDB `model_evaluations` collection.
