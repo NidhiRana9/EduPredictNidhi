@@ -1,0 +1,44 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables & local secrets
+.env
+.env.local
+
+# Testing and caching
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Saved models and serialized artifacts
+models/*.pkl
+models/*.joblib
+models/*.onnx
+models/*.h5
+!models/.gitkeep
+
+# Generated results, metrics, and charts
+results/charts/*.png
+results/charts/*.jpg
+results/charts/*.svg
+results/*.json
+results/*.csv
+!results/.gitkeep
+!results/charts/.gitkeep
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+Desktop.ini
+.DS_Store
