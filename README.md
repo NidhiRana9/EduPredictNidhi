@@ -7,7 +7,8 @@ EduPredict is an end-to-end Machine Learning and Data Analysis system designed t
 > - **Phase 2: Dataset Validation and MongoDB Import** (Completed & Verified)  
 > - **Phase 3: Exploratory Data Analysis & Feature Preprocessing** (Completed & Verified)  
 > - **Phase 4: Machine Learning Model Training & Pipeline Persistence** (Completed & Verified)  
-> - **Phase 5: Model Evaluation & Evidence-Based Comparison** (Completed & Verified)
+> - **Phase 5: Model Evaluation & Evidence-Based Comparison** (Completed & Verified)  
+> - **Phase 6: MongoDB + ML Prediction Pipeline** (Completed & Verified)
 
 ---
 
@@ -20,7 +21,7 @@ EduPredict is an end-to-end Machine Learning and Data Analysis system designed t
 - **Machine Learning & Preprocessing:** scikit-learn (`>=1.4.0`)
 - **Model Persistence:** joblib (`>=1.3.0`)
 - **Visualization:** matplotlib (`>=3.8.0`)
-- **Testing:** Python standard library `unittest` (25 automated tests passed)
+- **Testing:** Python standard library `unittest` (32 automated tests passed)
 
 ---
 
@@ -40,7 +41,9 @@ EduPredict/
 │   ├── analyze_data.py           # MongoDB data retriever, EDA charts & report generator
 │   ├── preprocessing.py          # Feature partitioning, pipeline builder & train/test splitter
 │   ├── train_models.py           # Model training, CV evaluation & joblib artifact persistence
-│   └── evaluate_models.py        # Held-out test evaluation, chart generation & MongoDB logging
+│   ├── evaluate_models.py        # Held-out test evaluation, chart generation & MongoDB logging
+│   ├── prediction_service.py     # Reusable inference service with leakage prevention
+│   └── predict_students.py       # Batch/single student prediction CLI & MongoDB upsert
 │
 ├── models/                       # Persisted, fitted scikit-learn pipelines (.joblib)
 │   ├── .gitkeep
@@ -69,14 +72,16 @@ EduPredict/
 │
 ├── reports/                      # Documentation and analysis reports
 │   ├── data_analysis_report.md   # Comprehensive Phase 3 EDA report
-│   └── model_evaluation_report.md# Comprehensive Phase 5 Model Evaluation & Comparison report
+│   ├── model_evaluation_report.md# Comprehensive Phase 5 Model Evaluation & Comparison report
+│   └── prediction_run_report.md  # Comprehensive Phase 6 Prediction Run & Validation report
 │
 ├── tests/
 │   ├── test_database.py          # Phase 1: MongoDB connectivity and handle tests
 │   ├── test_import_data.py       # Phase 2: CSV validation and idempotent import tests
 │   ├── test_preprocessing.py     # Phase 3: Feature separation, pipeline & split tests
 │   ├── test_train_models.py      # Phase 4: Model training, artifact loading & split tests
-│   └── test_evaluate_models.py   # Phase 5: Test evaluation, metric calculation & roundtrip tests
+│   ├── test_evaluate_models.py   # Phase 5: Test evaluation, metric calculation & roundtrip tests
+│   └── test_prediction_pipeline.py# Phase 6: Prediction service, validation & MongoDB upsert tests
 │
 ├── .gitignore                    # Git ignore rules for caches, venv, and large artifacts
 ├── requirements.txt              # Project dependencies and version bounds
@@ -126,7 +131,7 @@ python -m venv venv
 
 ---
 
-## 5. Execution Workflow (Phases 1 through 5)
+## 5. Execution Workflow (Phases 1 through 6)
 
 ### Step 1: Verify MongoDB Connection (Phase 1)
 ```powershell
@@ -163,6 +168,25 @@ python -m venv venv
 - Exports `results/metrics.json` and `results/regression_predictions.csv`.
 - Generates `reports/model_evaluation_report.md`.
 - Idempotently logs evaluation summaries to MongoDB collection `model_evaluations`.
+
+### Step 6: Generate Predictions on Student Records (Phase 6)
+```powershell
+# Safe default run (processes first 10 students):
+.\venv\Scripts\python.exe -m src.predict_students
+
+# Predict single student by source_row_id or ObjectId:
+.\venv\Scripts\python.exe -m src.predict_students --student-id 1
+
+# Predict custom batch (e.g., 25 students):
+.\venv\Scripts\python.exe -m src.predict_students --limit 25
+
+# Process all eligible students:
+.\venv\Scripts\python.exe -m src.predict_students --all
+```
+- Performs inference using all 3 trained model pipelines without fitting or retraining.
+- Strips any grade or target fields (`G1`, `G2`, `G3`, `at_risk`, `_id`) to prevent grade leakage.
+- Idempotently upserts predictions into MongoDB `student_predictions` on `(student_id, model_version)`.
+- Generates execution summary in `reports/prediction_run_report.md`.
 
 ---
 
@@ -224,17 +248,59 @@ python -m venv venv
 
 ---
 
-### D. MongoDB Persistence
+## 7. Prediction Service & Pipeline Architecture (Phase 6)
 
-Evaluation summaries are stored in MongoDB collection `model_evaluations` within database `edupredict_db`:
-- Unique compound upsert key on `(model_name, dataset_source)`.
-- Rerunning evaluation updates records in-place without generating duplicates.
+### A. Inference Architecture & Anti-Leakage Safeguards
+The prediction subsystem consists of two modular layers:
+1. **`PredictionService` (`src/prediction_service.py`):**
+   - **Pre-trained Pipelines:** Automatically loads `decision_tree_classifier.joblib`, `random_forest_classifier.joblib`, and `random_forest_regressor.joblib`.
+   - **No In-Flight Retraining:** Executes purely in inference mode (`predict()` and `predict_proba()`), never calling `fit()` or `partial_fit()`.
+   - **Feature Cleansing & Validation:** Automatically scrubs out metadata (`_id`, `dataset_source`, `source_row_id`) and ground-truth grades/targets (`G1`, `G2`, `G3`, `at_risk`). Verifies that all 30 pre-semester predictors are present and conform to numeric/categorical type bounds.
+   - **Native Python Type Coercion:** Ensures all outputs (`int`, `float`) are converted from NumPy primitives to native Python types prior to serialization.
+
+2. **`predict_students` CLI (`src/predict_students.py`):**
+   - Reads eligible documents from MongoDB `edupredict_db.students`.
+   - Supports targeted single-student prediction (`--student-id`) or batched execution (`--limit N`, default 10; `--all`).
+   - Implements per-record error isolation: bad or missing features on a single document are recorded as failures without terminating batch processing.
+   - Idempotently stores outputs to `edupredict_db.student_predictions` using MongoDB bulk `UpdateOne(..., upsert=True)`.
+
+### B. MongoDB Prediction Document Schema
+```json
+{
+  "student_id": "1",
+  "model_version": "v1",
+  "predictions": {
+    "decision_tree_at_risk": 0,
+    "random_forest_at_risk": 0,
+    "random_forest_risk_probability": 0.3542,
+    "random_forest_estimated_g3": 11.83
+  },
+  "created_at": "2026-10-17T04:12:15.000Z",
+  "metadata": {
+    "source_collection": "students",
+    "mongo_id": "673891...",
+    "features_used_count": 30,
+    "leakage_guard_verified": true,
+    "models": {
+      "classification_dt": "models/decision_tree_classifier.joblib",
+      "classification_rf": "models/random_forest_classifier.joblib",
+      "regression_rf": "models/random_forest_regressor.joblib"
+    }
+  }
+}
+```
+
+### C. Educational & Operational Guidelines
+- **Binary vs. Continuous Guidance:** Decision Tree is the recommended early-warning classification model due to its superior **62.7% recall** (detecting significantly more at-risk students than Random Forest's 45.8%).
+- **Probabilistic Risk Scoring:** Random Forest risk probability (`random_forest_risk_probability`) provides a calibrated continuum of risk (e.g., 0.75 indicates strong risk) for nuanced tier-based advisor intervention.
+- **Continuous Grade Estimates:** Regression outputs (`random_forest_estimated_g3`) serve as broad indicator benchmarks (MAE ≈ 3.39 marks), not exact final grade determinations.
+- **Advisory Status:** All model outputs are advisory estimates designed for early support, not deterministic evaluations of student capabilities.
 
 ---
 
-## 7. Automated Testing (25 Tests Passed)
+## 8. Automated Testing (32 Tests Passed)
 
-Run the full project test suite covering all 5 phases:
+Run the full project test suite covering all 6 phases:
 
 **PowerShell:**
 ```powershell
@@ -252,3 +318,5 @@ venv\Scripts\python.exe -m unittest discover -s tests -v
 - **`TestPreprocessing` (5 tests):** `at_risk` threshold logic (`G3 < 10`), feature leakage exclusion (`G1`, `G2`, `G3` excluded), feature typing, ColumnTransformer construction, and stratified splitting.
 - **`TestTrainModels` (6 tests):** Target definition accuracy, train/test split reproducibility, ColumnTransformer execution, in-memory model fitting & predicting, joblib artifact reloading verification, and `training_summary.json` schema validation.
 - **`TestEvaluateModels` (5 tests):** Explicit `pos_label=1` metric calculation, regression metric validation on controlled values, missing artifact refusal handling, `metrics.json` and `regression_predictions.csv` roundtrip parsing, and model artifact preservation.
+- **`TestPredictionPipeline` (7 tests):** Pipeline artifact loading, feature leakage scrubbing & validation, missing feature rejection, corrupted numeric feature rejection, single prediction document schema & types, batch resilience with per-record fault tolerance, and idempotent MongoDB upsert storage.
+

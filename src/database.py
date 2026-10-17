@@ -34,6 +34,7 @@ SERVER_SELECTION_TIMEOUT_MS: int = 5000
 # Collection names defined for current and future phases
 COLLECTION_STUDENTS: str = "students"
 COLLECTION_PREDICTIONS: str = "predictions"
+COLLECTION_STUDENT_PREDICTIONS: str = "student_predictions"
 COLLECTION_MODEL_EVALUATIONS: str = "model_evaluations"
 
 
