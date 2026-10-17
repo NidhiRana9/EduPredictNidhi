@@ -6,7 +6,8 @@ EduPredict is an end-to-end Machine Learning and Data Analysis system designed t
 > - **Phase 1: Project Setup and MongoDB Connectivity** (Completed & Verified)  
 > - **Phase 2: Dataset Validation and MongoDB Import** (Completed & Verified)  
 > - **Phase 3: Exploratory Data Analysis & Feature Preprocessing** (Completed & Verified)  
-> - **Phase 4: Machine Learning Model Training & Pipeline Persistence** (Completed & Verified)
+> - **Phase 4: Machine Learning Model Training & Pipeline Persistence** (Completed & Verified)  
+> - **Phase 5: Model Evaluation & Evidence-Based Comparison** (Completed & Verified)
 
 ---
 
@@ -19,7 +20,7 @@ EduPredict is an end-to-end Machine Learning and Data Analysis system designed t
 - **Machine Learning & Preprocessing:** scikit-learn (`>=1.4.0`)
 - **Model Persistence:** joblib (`>=1.3.0`)
 - **Visualization:** matplotlib (`>=3.8.0`)
-- **Testing:** Python standard library `unittest` (20 automated tests passed)
+- **Testing:** Python standard library `unittest` (25 automated tests passed)
 
 ---
 
@@ -38,7 +39,8 @@ EduPredict/
 │   ├── import_data.py            # CSV validator and idempotent MongoDB importer
 │   ├── analyze_data.py           # MongoDB data retriever, EDA charts & report generator
 │   ├── preprocessing.py          # Feature partitioning, pipeline builder & train/test splitter
-│   └── train_models.py           # Model training, CV evaluation & joblib artifact persistence
+│   ├── train_models.py           # Model training, CV evaluation & joblib artifact persistence
+│   └── evaluate_models.py        # Held-out test evaluation, chart generation & MongoDB logging
 │
 ├── models/                       # Persisted, fitted scikit-learn pipelines (.joblib)
 │   ├── .gitkeep
@@ -47,25 +49,34 @@ EduPredict/
 │   └── random_forest_regressor.joblib
 │
 ├── results/                      # Metric outputs, predictions, and reports
-│   ├── charts/                   # 6 Generated EDA visualizations (.png)
+│   ├── charts/                   # 11 Generated visualizations (.png)
 │   │   ├── absences_vs_g3.png
 │   │   ├── at_risk_distribution.png
+│   │   ├── classification_metrics_comparison.png
+│   │   ├── confusion_matrix_decision_tree.png
+│   │   ├── confusion_matrix_random_forest.png
 │   │   ├── failures_vs_g3.png
 │   │   ├── g3_distribution.png
 │   │   ├── numeric_correlation_heatmap.png
+│   │   ├── regression_actual_vs_predicted.png
+│   │   ├── regression_residuals_distribution.png
 │   │   └── studytime_distribution.png
 │   ├── cleaned_students.csv      # Exported clean analysis dataset (5,000 rows)
 │   ├── data_quality_report.json  # Machine-readable data quality report
-│   └── training_summary.json     # Training-only CV metrics & model specifications
+│   ├── training_summary.json     # Training-only CV metrics & model specifications
+│   ├── metrics.json              # Phase 5 held-out test evaluation metrics
+│   └── regression_predictions.csv# Held-out test predictions (1,000 rows with residuals)
 │
 ├── reports/                      # Documentation and analysis reports
-│   └── data_analysis_report.md   # Comprehensive Phase 3 EDA report
+│   ├── data_analysis_report.md   # Comprehensive Phase 3 EDA report
+│   └── model_evaluation_report.md# Comprehensive Phase 5 Model Evaluation & Comparison report
 │
 ├── tests/
 │   ├── test_database.py          # Phase 1: MongoDB connectivity and handle tests
 │   ├── test_import_data.py       # Phase 2: CSV validation and idempotent import tests
 │   ├── test_preprocessing.py     # Phase 3: Feature separation, pipeline & split tests
-│   └── test_train_models.py      # Phase 4: Model training, artifact loading & split tests
+│   ├── test_train_models.py      # Phase 4: Model training, artifact loading & split tests
+│   └── test_evaluate_models.py   # Phase 5: Test evaluation, metric calculation & roundtrip tests
 │
 ├── .gitignore                    # Git ignore rules for caches, venv, and large artifacts
 ├── requirements.txt              # Project dependencies and version bounds
@@ -74,10 +85,12 @@ EduPredict/
 
 ---
 
-## 3. Dataset Overview
+## 3. Dataset Overview & Synthetic Data Disclaimer
 
 ### Important Dataset Notice
-> **Notice:** The dataset used in this project (`data/student-mat-synthetic.csv` and MongoDB collection `students`) is **entirely synthetic**. It was generated to model the feature distribution and schema of the benchmark UCI Student Performance dataset (P. Cortez and A. Silva, 2008) for academic modeling purposes. It contains **no real, personally identifiable student records**. Results on synthetic data demonstrate pipeline correctness and must not be treated as empirical evidence of real-world student behavior.
+> **Notice:** The dataset used in this project (`data/student-mat-synthetic.csv` and MongoDB collection `students`) is **entirely synthetic**. It was generated to model the feature distribution and schema of the benchmark UCI Student Performance dataset (P. Cortez and A. Silva, 2008) for academic modeling purposes. It contains **no real, personally identifiable student records**.
+>
+> **Implication for Model Evaluation:** The evaluation results demonstrate the correctness of the analytical pipeline, data preprocessing, and algorithm behavior. They **must not** be interpreted as empirical findings about real-world student populations or educational systems.
 
 ### Quality Summary
 - **Source:** MongoDB `edupredict_db.students` (`dataset_source: "synthetic"`)
@@ -113,7 +126,7 @@ python -m venv venv
 
 ---
 
-## 5. Execution Workflow (Phases 1 through 4)
+## 5. Execution Workflow (Phases 1 through 5)
 
 ### Step 1: Verify MongoDB Connection (Phase 1)
 ```powershell
@@ -125,74 +138,103 @@ python -m venv venv
 .\venv\Scripts\python.exe -m src.import_data
 ```
 - Performs idempotent bulk upsert on `(dataset_source, source_row_id)`.
-- Rerunning the script updates in-place without duplicating documents.
 
 ### Step 3: Run Exploratory Data Analysis (Phase 3)
 ```powershell
 .\venv\Scripts\python.exe -m src.analyze_data
 ```
-- Generates 6 high-resolution charts in `results/charts/`.
+- Generates 6 high-resolution EDA charts in `results/charts/`.
 - Exports `results/data_quality_report.json`, `reports/data_analysis_report.md`, and `results/cleaned_students.csv`.
 
 ### Step 4: Train & Persist Machine Learning Models (Phase 4)
 ```powershell
 .\venv\Scripts\python.exe -m src.train_models
 ```
+- Evaluates 5-fold cross-validation on the 4,000 training records.
+- Persists fitted pipelines to `models/*.joblib`.
+- Exports `results/training_summary.json`.
+
+### Step 5: Evaluate Models on Held-Out Test Set (Phase 5)
+```powershell
+.\venv\Scripts\python.exe -m src.evaluate_models
+```
+- Evaluates models on the untouched 1,000 test samples.
+- Generates 5 evaluation visualizations in `results/charts/`.
+- Exports `results/metrics.json` and `results/regression_predictions.csv`.
+- Generates `reports/model_evaluation_report.md`.
+- Idempotently logs evaluation summaries to MongoDB collection `model_evaluations`.
 
 ---
 
-## 6. Machine Learning Architecture (Phase 4)
+## 6. Model Evaluation & Comparison (Phase 5)
 
-### A. The Two Prediction Tasks
+### A. Evaluation Metric Definitions
 
-1. **Task A: At-Risk Classification (Early Warning)**
-   - **Target:** `at_risk = 1` if `G3 < 10` else `0`.
-   - **Models:**
-     - `DecisionTreeClassifier(max_depth=5, min_samples_split=10, min_samples_leaf=5, random_state=42)`
-     - `RandomForestClassifier(n_estimators=200, max_depth=10, min_samples_split=5, random_state=42)`
-   - **Class Balance:** 47.4% at-risk vs. 52.6% not-at-risk. Because the classes are virtually balanced (~1.1:1 ratio), standard unweighted training is employed without requiring synthetic oversampling (SMOTE).
-
-2. **Task B: Final Grade Regression**
-   - **Target:** Numerical final score `G3` (0–20 continuous scale).
-   - **Model:**
-     - `RandomForestRegressor(n_estimators=200, max_depth=10, min_samples_split=5, random_state=42)`
-
-### B. Target Leakage Prevention & Feature Exclusion
-
-To build an authentic early-warning system that can flag students *before* exams occur:
-- **Strictly Excluded Columns:** `G1` (Period 1 exam), `G2` (Period 2 exam), `G3` (Final exam), `at_risk` (Target), and database identifiers (`_id`, `source_row_id`, `dataset_source`).
-- **Remaining 30 Predictor Features:**
-  - **13 Numeric Features:** `age`, `Medu`, `Fedu`, `traveltime`, `studytime`, `failures`, `famrel`, `freetime`, `goout`, `Dalc`, `Walc`, `health`, `absences`.
-  - **17 Categorical Features:** `school`, `sex`, `address`, `famsize`, `Pstatus`, `Mjob`, `Fjob`, `reason`, `guardian`, `schoolsup`, `famsup`, `paid`, `activities`, `nursery`, `higher`, `internet`, `romantic`.
-
-### C. Data Splitting & Held-Out Test Set Integrity
-
-- **Split Ratio:** 80% Train (4,000 records) / 20% Test (1,000 records) using `random_state=42`.
-- **Stratification:** Classification split uses stratified sampling to preserve the 47.4% / 52.6% risk ratio.
-- **Strict Held-Out Rule:** The test set of 1,000 records was **completely held out** during Phase 4. Zero test samples were used in feature selection, imputer fitting, encoder fitting, or model selection. Comprehensive test-set evaluation is reserved for Phase 5.
-
-### D. Training-Only Cross-Validation Results (5-Fold CV on 4,000 Training Samples)
-
-| Model | Task | Primary CV Metric | Secondary CV Metric | Secondary CV Metric |
-|---|---|---|---|---|
-| **Decision Tree Classifier** | At-Risk Classification | Accuracy: **59.40%** (±2.4%) | F1-Score: **0.5517** (±0.043) | ROC-AUC: **0.6332** (±0.017) |
-| **Random Forest Classifier** | At-Risk Classification | Accuracy: **60.82%** (±0.6%) | F1-Score: **0.5356** (±0.016) | ROC-AUC: **0.6568** (±0.008) |
-| **Random Forest Regressor** | Final Grade (G3) | MAE: **3.3194** (±0.058) | RMSE: **4.1453** (±0.065) | R²: **-0.0100** (±0.004) |
-
-### E. Persisted Model Pipelines (`models/*.joblib`)
-
-The entire fitted scikit-learn `Pipeline` (including `ColumnTransformer` preprocessing + estimator) is persisted using `joblib`:
-- `models/decision_tree_classifier.joblib`
-- `models/random_forest_classifier.joblib`
-- `models/random_forest_regressor.joblib`
-
-Because the preprocessor is packaged inside the pipeline, future prediction modules can pass raw pandas DataFrames or dictionaries directly into `.predict()` without manual encoding or scaling.
+1. **Accuracy:** Overall proportion of correct classifications:
+   $$\text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN}$$
+2. **Precision (pos_label=1):** Exactness of at-risk flags (proportion of predicted at-risk students who are actually at risk):
+   $$\text{Precision} = \frac{TP}{TP + FP}$$
+3. **Recall / Sensitivity (pos_label=1):** Completeness of at-risk detection (proportion of actual at-risk students successfully flagged):
+   $$\text{Recall} = \frac{TP}{TP + FN}$$
+4. **F1-Score:** Harmonic mean balancing precision and recall:
+   $$\text{F1} = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}$$
+5. **Mean Absolute Error (MAE):** Average magnitude of prediction error on a continuous grade scale:
+   $$\text{MAE} = \frac{1}{n} \sum_{i=1}^n |y_i - \hat{y}_i|$$
+6. **Coefficient of Determination (R²):** Proportion of variance in final grades explained by the model relative to a naive constant mean prediction baseline:
+   $$R^2 = 1 - \frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y})^2}$$
 
 ---
 
-## 7. Automated Testing (20 Tests Passed)
+### B. Held-Out Test Set Results (n = 1,000 Records)
 
-Run the full project test suite:
+#### Task A: At-Risk Classification
+
+| Metric | Decision Tree Classifier | Random Forest Classifier | Best Model & Rationale |
+|---|---|---|---|
+| **Accuracy** | **60.40%** | 58.60% | **Decision Tree** (+1.8%) |
+| **Precision (pos_label=1)** | 57.56% | **58.02%** | Random Forest (+0.46%) |
+| **Recall (pos_label=1)** | **62.66%** | 45.78% | **Decision Tree (+16.88%)** |
+| **F1-Score (pos_label=1)** | **0.6000** | 0.5118 | **Decision Tree (+0.0882)** |
+| **True Negatives (TN)** | 307 | 369 | Random Forest produces fewer false alarms |
+| **False Positives (FP)** | 219 | 157 | Random Forest is more conservative |
+| **False Negatives (FN)** | **177** | 257 | **Decision Tree misses 80 fewer struggling students** |
+| **True Positives (TP)** | **297** | 217 | **Decision Tree identifies 80 more at-risk students** |
+
+#### Task B: Final Grade Regression
+
+| Metric | Random Forest Regressor | Baseline Interpretation |
+|---|---|---|
+| **Mean Absolute Error (MAE)** | **3.3870** grade points | Average deviation of ~3.39 marks on a 0–20 scale. |
+| **Root Mean Squared Error (RMSE)**| **4.2779** grade points | Penalizes larger deviations. |
+| **Coefficient of Determination (R²)**| **-0.0234** | Near zero / slightly negative. |
+
+---
+
+### C. Interpretation of Results & Best Model Selection
+
+1. **Why Decision Tree is the Superior Early-Warning Classifier:**
+   - In educational intervention, **Recall is the critical operational metric**. A False Negative means a struggling student receives no support and risks failing, whereas a False Positive merely results in providing check-ins or tutoring to a passing student.
+   - The Decision Tree achieved **62.7% recall** (identifying 297 out of 474 at-risk students) vs. only **45.8% recall** for Random Forest (which missed more than half of the at-risk cohort).
+   - Combined with higher overall Accuracy (60.4%) and F1-score (0.6000), Decision Tree is the recommended production model for proactive early alerts.
+
+2. **Understanding Negative R² in Continuous Regression:**
+   - When models attempt to predict exact continuous marks ($G3$) *strictly* from pre-semester demographic and lifestyle factors without interim exam scores ($G1, G2$), the variance of student test performance is high.
+   - The resulting $R^2 \approx -0.02$ indicates that continuous point estimation has high variance relative to a naive mean predictor.
+   - **Key Finding:** Binary classification (`at_risk`) is far more dependable, actionable, and stable than continuous grade regression for early academic intervention.
+
+---
+
+### D. MongoDB Persistence
+
+Evaluation summaries are stored in MongoDB collection `model_evaluations` within database `edupredict_db`:
+- Unique compound upsert key on `(model_name, dataset_source)`.
+- Rerunning evaluation updates records in-place without generating duplicates.
+
+---
+
+## 7. Automated Testing (25 Tests Passed)
+
+Run the full project test suite covering all 5 phases:
 
 **PowerShell:**
 ```powershell
@@ -206,18 +248,7 @@ venv\Scripts\python.exe -m unittest discover -s tests -v
 
 ### Test Suite Breakdown:
 - **`TestDatabaseConnection` (4 tests):** Client instantiation, MongoDB admin ping, database selection (`edupredict_db`), and collection handles.
-- **`TestImportData` (5 tests):** CSV parsing (33 columns, delimiter), data sanitization, compound unique indexing, idempotency check (rerun count unchanged), and verification helper.
-- **`TestPreprocessing` (5 tests):** `at_risk` threshold logic (`G3 < 10`), feature leakage exclusion (`G1`, `G2`, `G3` excluded), feature typing, un-fitted ColumnTransformer construction, and stratified train/test splitting.
+- **`TestImportData` (5 tests):** CSV parsing (33 columns, delimiter), data sanitization, compound unique indexing, idempotency check, and verification helper.
+- **`TestPreprocessing` (5 tests):** `at_risk` threshold logic (`G3 < 10`), feature leakage exclusion (`G1`, `G2`, `G3` excluded), feature typing, ColumnTransformer construction, and stratified splitting.
 - **`TestTrainModels` (6 tests):** Target definition accuracy, train/test split reproducibility, ColumnTransformer execution, in-memory model fitting & predicting, joblib artifact reloading verification, and `training_summary.json` schema validation.
-
----
-
-## 8. Next Steps (Phase 5 Preview)
-
-Once Phase 4 is approved:
-- **Phase 5: Model Evaluation, Prediction Pipeline & Final Reporting**
-  - Evaluate the 3 persisted pipelines on the held-out test set (1,000 samples).
-  - Compute test Confusion Matrix, Classification Report (Precision, Recall, F1), ROC Curves, MAE, RMSE, and R².
-  - Store model evaluation metrics in MongoDB `model_evaluations` collection.
-  - Generate model prediction outputs and log them to MongoDB `predictions` collection.
-  - Compile the final assignment and technical project report in `reports/`.
+- **`TestEvaluateModels` (5 tests):** Explicit `pos_label=1` metric calculation, regression metric validation on controlled values, missing artifact refusal handling, `metrics.json` and `regression_predictions.csv` roundtrip parsing, and model artifact preservation.
