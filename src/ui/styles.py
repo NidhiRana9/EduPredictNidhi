@@ -373,6 +373,28 @@ hr {
     border-color: var(--border-warm) !important;
     margin: 1.5rem 0 !important;
 }
+
+/* ==========================================================================
+   Streamlit Deploy Button & Header Overrides
+   ========================================================================== */
+/* Completely remove the Deploy button and deploy section from UI */
+.stAppDeployButton,
+[data-testid="stAppDeployButton"],
+[data-testid="stDeployButton"],
+button[title="Deploy this app"],
+header [data-testid="stToolbar"] .stAppDeployButton,
+header [data-testid="stToolbar"] [data-testid="stAppDeployButton"],
+#MainMenu [data-testid="stAppDeployButton"],
+div[data-testid="stToolbarActions"] .stAppDeployButton {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
 </style>
 """
 
