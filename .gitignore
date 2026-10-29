@@ -30,6 +30,7 @@ results/charts/*.png
 results/charts/*.jpg
 results/charts/*.svg
 results/*.json
+!results/metrics.json
 results/*.csv
 !results/.gitkeep
 !results/charts/.gitkeep
