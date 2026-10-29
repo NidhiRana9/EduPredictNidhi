@@ -1,8 +1,8 @@
-"""EduPredict — Student Performance Analytics
+"""EduPredict — Student Performance Analytics Dashboard
 
-Streamlit application entry point. Implements an editorial, warm education
-analytics interface for exploring student performance distributions, evaluating
-machine learning benchmarks, and executing multi-model academic risk predictions.
+Streamlit application entry point. Implements an executive Green Dashboard
+interface for exploring student cohort analytics, evaluating scikit-learn
+benchmarks, and executing multi-model academic risk predictions.
 """
 
 import sys
@@ -15,6 +15,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.ui.styles import apply_editorial_styles
+from src.ui.components import clean_html
 from src.ui.pages_overview import render_overview_page
 from src.ui.pages_predict import render_predict_page
 from src.ui.pages_history import render_history_page
@@ -23,13 +24,13 @@ from src.ui.pages_about import render_about_page
 
 # Page Configuration
 st.set_page_config(
-    page_title="EduPredict — Student Performance Analytics",
-    page_icon=None,
+    page_title="EduPredict — Student Analytics Dashboard",
+    page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Apply Custom Editorial CSS (Warm Ivory, Soft White, Forest Green, Terracotta)
+# Apply Custom Green Dashboard CSS
 apply_editorial_styles()
 
 # Navigation Pages
@@ -47,15 +48,21 @@ if "nav_page" not in st.session_state:
 
 # SIDEBAR SHELL
 with st.sidebar:
-    st.markdown(
-        """
-        <div class="brand-container">
-            <h1 class="brand-title">EduPredict</h1>
-            <div class="brand-subtitle">Student Performance Analytics</div>
+    sidebar_brand = """
+    <div class="brand-container">
+        <div class="brand-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        <div class="brand-text-wrap">
+            <div class="brand-title">Edu<span>Predict</span></div>
+            <div class="brand-subtitle">Student Performance Dashboard</div>
+        </div>
+    </div>
+    """
+    st.markdown(clean_html(sidebar_brand), unsafe_allow_html=True)
 
     # Radio button navigation
     selected_page = st.radio(
@@ -71,17 +78,20 @@ with st.sidebar:
     if selected_page != st.session_state["nav_page"]:
         st.session_state["nav_page"] = selected_page
 
-    st.markdown(
-        """
-        <div class="sidebar-footer">
-            <strong>EduPredict System</strong><br/>
-            Academic Machine Learning Project<br/>
-            Synthetic Dataset Benchmark<br/>
-            Python &middot; scikit-learn &middot; MongoDB
+    sidebar_footer = """
+    <div class="sidebar-footer-card">
+        <div class="sidebar-status-indicator">
+            <span class="status-dot-active"></span> Platform Online
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        <div style="font-weight: 700; color: #0A3E26; font-size: 0.8rem; margin-bottom: 2px;">EduPredict Core v2.4</div>
+        <div style="color: #4A6355; font-size: 0.73rem; line-height: 1.4;">
+            Cohort: 5,000 Synthetic Records<br/>
+            Storage: MongoDB (Idempotent)<br/>
+            Compliance: Zero Grade Leakage
+        </div>
+    </div>
+    """
+    st.markdown(clean_html(sidebar_footer), unsafe_allow_html=True)
 
 # ROUTE TO SELECTED PAGE VIEW
 current_page = st.session_state["nav_page"]

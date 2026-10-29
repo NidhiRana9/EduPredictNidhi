@@ -15,7 +15,7 @@ from src.database import (
     get_mongo_client,
     ping_database,
 )
-from src.ui.components import render_callout, render_header, render_stat_tile
+from src.ui.components import clean_html, render_callout, render_header, render_stat_tile
 
 
 def fetch_prediction_history() -> List[Dict[str, Any]]:
@@ -37,15 +37,16 @@ def fetch_prediction_history() -> List[Dict[str, Any]]:
 
 
 def render_history_page() -> None:
-    """Render the Prediction History table and filter controls."""
+    """Render the Prediction History table and filter controls in Green Dashboard style."""
     render_header(
-        title="Prediction History",
-        subtitle="Review, filter, and inspect previously saved student risk assessments stored in MongoDB.",
+        title="Prediction History &amp; Audit Log",
+        subtitle="Review, filter, and inspect previously recorded student assessments stored in MongoDB.",
+        category_label="HISTORICAL ASSESSMENT LOG",
     )
 
     records = fetch_prediction_history()
 
-    # Metric tile + Refresh row
+    # Metric tiles + Refresh row
     col_stat1, col_stat2, col_stat3, col_ref = st.columns([0.28, 0.28, 0.28, 0.16])
 
     total_count = len(records)
@@ -55,32 +56,51 @@ def render_history_page() -> None:
     passing_count = total_count - at_risk_count
 
     with col_stat1:
-        render_stat_tile("Total Stored", f"{total_count:,}", "Documents in student_predictions")
+        render_stat_tile(
+            label="Total Stored",
+            value=f"{total_count:,}",
+            caption="Documents in student_predictions",
+            delta_text="MongoDB Log",
+            delta_type="green",
+            icon="🗄️",
+        )
     with col_stat2:
-        render_stat_tile("Flagged At-Risk", f"{at_risk_count:,}", "By Decision Tree Classifier")
+        render_stat_tile(
+            label="Flagged At-Risk",
+            value=f"{at_risk_count:,}",
+            caption="By Decision Tree Classifier",
+            delta_text="Intervention",
+            delta_type="danger",
+            icon="⚠️",
+        )
     with col_stat3:
-        render_stat_tile("Passing / Not At-Risk", f"{passing_count:,}", "By Decision Tree Classifier")
+        render_stat_tile(
+            label="Passing / Low-Risk",
+            value=f"{passing_count:,}",
+            caption="By Decision Tree Classifier",
+            delta_text="On Track",
+            delta_type="green",
+            icon="✅",
+        )
     with col_ref:
-        st.markdown("<div style='height: 0.8rem;'></div>", unsafe_allow_html=True)
-        if st.button("Refresh Data", use_container_width=True):
+        st.markdown(clean_html("<div style='height: 0.8rem;'></div>"), unsafe_allow_html=True)
+        if st.button("Refresh Log", use_container_width=True):
             st.rerun()
 
     if total_count == 0:
-        st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
-        st.markdown(
-            """
-            <div class="editorial-card" style="text-align: center; padding: 2.5rem 1.5rem;">
-                <div style="font-family: Georgia, serif; font-size: 1.25rem; color: #292D29; margin-bottom: 0.5rem;">
-                    No Historical Predictions in MongoDB
-                </div>
-                <div style="font-size: 0.92rem; color: #77776F; max-width: 520px; margin: 0 auto 1.5rem auto; line-height: 1.5;">
-                    There are currently no saved prediction documents in the <code>student_predictions</code> collection.
-                    Assess a student via the form or run the Phase 6 batch prediction workflow to record inferences.
-                </div>
+        st.markdown(clean_html("<div style='height: 1.25rem;'></div>"), unsafe_allow_html=True)
+        empty_card_html = """
+        <div class="dashboard-card" style="text-align: center; padding: 2.5rem 1.5rem;">
+            <div style="font-size: 1.2rem; font-weight: 700; color: #0A3E26; margin-bottom: 0.5rem;">
+                No Saved Predictions Recorded in MongoDB
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            <div style="font-size: 0.9rem; color: #4A6355; max-width: 520px; margin: 0 auto 1.5rem auto; line-height: 1.5;">
+                There are currently no assessment documents in the <code>student_predictions</code> collection.
+                Assess a student via the form or execute the batch prediction workflow to record inferences.
+            </div>
+        </div>
+        """
+        st.markdown(clean_html(empty_card_html), unsafe_allow_html=True)
         col_act1, col_act2, col_act3 = st.columns([0.35, 0.3, 0.35])
         with col_act2:
             if st.button("Assess a Student Now →", type="primary", use_container_width=True):
@@ -88,9 +108,16 @@ def render_history_page() -> None:
                 st.rerun()
         return
 
-    st.markdown("<div style='height: 1.25rem;'></div>", unsafe_allow_html=True)
+    st.markdown(clean_html("<div style='height: 1rem;'></div>"), unsafe_allow_html=True)
 
-    # Search & Filter Controls
+    # Search & Filter Controls Toolbar
+    filter_card_html = """
+    <div class="dashboard-card" style="padding: 1rem 1.25rem; margin-bottom: 1rem;">
+        <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #15803D; margin-bottom: 0.5rem;">
+            Filter &amp; Query Controls
+        </div>
+    """
+    st.markdown(clean_html(filter_card_html), unsafe_allow_html=True)
     col_search, col_filter, col_sort = st.columns([0.45, 0.3, 0.25])
 
     with col_search:
@@ -111,6 +138,7 @@ def render_history_page() -> None:
             "Sort Order",
             options=["Newest First", "Oldest First"],
         )
+    st.markdown(clean_html("</div>"), unsafe_allow_html=True)
 
     # Apply Filters
     filtered_records = records
@@ -143,9 +171,11 @@ def render_history_page() -> None:
         )
 
     st.markdown(
-        f"<div style='font-size: 0.85rem; color: #77776F; margin-top: 0.5rem; margin-bottom: 0.75rem;'>"
-        f"Showing <strong>{len(filtered_records)}</strong> of {total_count} saved prediction records."
-        f"</div>",
+        clean_html(
+            f"<div style='font-size: 0.82rem; color: #4A6355; margin-bottom: 0.75rem; font-weight: 500;'>"
+            f"Displaying <strong style='color: #15803D;'>{len(filtered_records)}</strong> of {total_count} saved assessment records."
+            f"</div>"
+        ),
         unsafe_allow_html=True,
     )
 
@@ -184,7 +214,7 @@ def render_history_page() -> None:
         st.info("No prediction records match the active search or filter criteria.")
 
     # Record Inspection Details Section
-    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+    st.markdown(clean_html("<div style='height: 1rem;'></div>"), unsafe_allow_html=True)
     with st.expander("Inspect Raw Prediction Document from MongoDB"):
         student_id_list = [str(r.get("student_id", "Unknown")) for r in filtered_records]
         if student_id_list:
@@ -194,7 +224,6 @@ def render_history_page() -> None:
                 None,
             )
             if target_record:
-                # Format MongoDB document for inspection
                 clean_doc = dict(target_record)
                 if "_id" in clean_doc:
                     clean_doc["_id"] = str(clean_doc["_id"])

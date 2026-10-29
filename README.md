@@ -131,7 +131,33 @@ python -m venv venv
 
 ---
 
-## 5. Execution Workflow (Phases 1 through 6)
+## 5. Launch the Green Analytics Dashboard (Streamlit Web UI)
+
+EduPredict includes a modern Green Analytics Dashboard designed for academic counselors and administrators.
+
+```powershell
+# Run using the virtual environment:
+.\venv\Scripts\streamlit run app.py
+
+# Or on Linux / macOS (or when venv is activated):
+streamlit run app.py
+```
+
+Once started, open your browser at:
+```text
+http://localhost:8501
+```
+
+The web dashboard provides:
+- **Overview:** Cohort metrics, 30-feature leakage isolation audit, and model leaderboard.
+- **Predict a Student:** Interactive 30-feature assessment form with preset profiles, risk gauge, and multi-model consensus.
+- **Prediction History:** MongoDB assessment query log with student ID search and risk filters.
+- **Model Performance:** Side-by-side Decision Tree vs. Random Forest evaluation benchmarks, confusion matrices, and regression residual plots.
+- **About the Project:** Architectural pipeline lineage and ethical counseling guidelines.
+
+---
+
+## 6. Execution Workflow (Phases 1 through 6)
 
 ### Step 1: Verify MongoDB Connection (Phase 1)
 ```powershell

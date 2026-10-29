@@ -1,6 +1,6 @@
 """Assess a Student View for EduPredict.
 
-Provides an intuitive form to collect the 30 non-grade predictor features,
+Provides an intuitive green dashboard form to collect the 30 non-grade predictor features,
 execute inference through the existing PredictionService, save the result
 idempotently into MongoDB, and present structured multi-model results.
 """
@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional, Tuple
 import streamlit as st
 from pymongo import UpdateOne
 
-from src.database import ( 
+from src.database import (
     COLLECTION_STUDENT_PREDICTIONS,
     COLLECTION_STUDENTS,
     get_database,
@@ -19,7 +19,7 @@ from src.database import (
     ping_database,
 )
 from src.prediction_service import PredictionService
-from src.ui.components import render_callout, render_header
+from src.ui.components import clean_html, render_callout, render_header, render_risk_gauge, render_stat_tile
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
@@ -62,17 +62,18 @@ def save_prediction_to_db(prediction_doc: Dict[str, Any]) -> Tuple[bool, str]:
 def render_predict_page() -> None:
     """Render the Assess a Student form and results panel."""
     render_header(
-        title="Assess a Student",
-        subtitle="Enter student and school-related information to estimate academic risk and expected final grade.",
+        title="Student Risk Assessment",
+        subtitle="Evaluate individual student academic risk and estimated final grade using 30 pre-semester indicators.",
+        category_label="STUDENT INFERENCE ENGINE",
     )
 
     # Educational limitation notice
     render_callout(
-        title="Target Leakage Prevention Principle",
+        title="Anti-Leakage Protocol Active",
         body=(
-            "In strict accordance with EduPredict's anti-leakage guidelines, <strong>G1 (First Period Grade)</strong>, "
-            "<strong>G2 (Second Period Grade)</strong>, and <strong>G3 (Final Exam Mark)</strong> are <em>excluded</em> from model inputs. "
-            "Predictions are computed entirely from 30 pre-semester demographic, familial, behavioral, and academic habits."
+            "In strict compliance with academic prediction guidelines, <strong>G1 (First Period)</strong>, "
+            "<strong>G2 (Second Period)</strong>, and <strong>G3 (Final Exam Mark)</strong> are completely excluded. "
+            "All indicators are derived from pre-semester demographic, familial, attendance, and study variables."
         ),
         is_warning=False,
     )
@@ -87,7 +88,7 @@ def render_predict_page() -> None:
         return
 
     # Profile pre-fill presets to facilitate evaluation testing
-    st.markdown("<h3>Assessment Presets &amp; Student Identifier</h3>", unsafe_allow_html=True)
+    st.markdown(clean_html("<h3>Assessment Presets &amp; Student Identifier</h3>"), unsafe_allow_html=True)
     col_preset, col_id = st.columns([0.6, 0.4])
 
     with col_preset:
@@ -129,15 +130,17 @@ def render_predict_page() -> None:
         p_medu, p_fedu = 3, 3
         p_famrel, p_internet, p_romantic = 4, "yes", "no"
 
-    st.markdown("<div style='height: 0.75rem;'></div>", unsafe_allow_html=True)
+    st.markdown(clean_html("<div style='height: 0.5rem;'></div>"), unsafe_allow_html=True)
 
     with st.form("student_assessment_form"):
         # SECTION 1: Student and School Information (5 features)
-        st.markdown(
-            "<div style='font-family: Georgia, serif; font-size: 1.1rem; font-weight: 600; color: #292D29; "
-            "border-bottom: 1px solid #E5E0D7; padding-bottom: 4px; margin-bottom: 12px;'>1. Student &amp; School Information</div>",
-            unsafe_allow_html=True,
-        )
+        sec1_html = """
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem; font-weight: 700; color: #0A3E26; border-bottom: 2px solid #E2ECE5; padding-bottom: 6px; margin-bottom: 14px;">
+            <span style="background: #15803D; color: #FFFFFF; border-radius: 6px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800;">1</span>
+            <span>Student &amp; School Demographics</span>
+        </div>
+        """
+        st.markdown(clean_html(sec1_html), unsafe_allow_html=True)
         c1, c2, c3, c4, c5 = st.columns(5)
 
         with c1:
@@ -173,11 +176,13 @@ def render_predict_page() -> None:
             )
 
         # SECTION 2: Family and Educational Background (7 features)
-        st.markdown(
-            "<div style='font-family: Georgia, serif; font-size: 1.1rem; font-weight: 600; color: #292D29; "
-            "border-bottom: 1px solid #E5E0D7; padding-bottom: 4px; margin-top: 18px; margin-bottom: 12px;'>2. Family &amp; Educational Background</div>",
-            unsafe_allow_html=True,
-        )
+        sec2_html = """
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem; font-weight: 700; color: #0A3E26; border-bottom: 2px solid #E2ECE5; padding-bottom: 6px; margin-top: 18px; margin-bottom: 14px;">
+            <span style="background: #15803D; color: #FFFFFF; border-radius: 6px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800;">2</span>
+            <span>Family &amp; Educational Background</span>
+        </div>
+        """
+        st.markdown(clean_html(sec2_html), unsafe_allow_html=True)
         c1, c2, c3, c4 = st.columns(4)
 
         with c1:
@@ -247,11 +252,13 @@ def render_predict_page() -> None:
             )
 
         # SECTION 3: Study Habits and Educational Support (10 features)
-        st.markdown(
-            "<div style='font-family: Georgia, serif; font-size: 1.1rem; font-weight: 600; color: #292D29; "
-            "border-bottom: 1px solid #E5E0D7; padding-bottom: 4px; margin-top: 18px; margin-bottom: 12px;'>3. Study Habits &amp; Educational Support</div>",
-            unsafe_allow_html=True,
-        )
+        sec3_html = """
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem; font-weight: 700; color: #0A3E26; border-bottom: 2px solid #E2ECE5; padding-bottom: 6px; margin-top: 18px; margin-bottom: 14px;">
+            <span style="background: #15803D; color: #FFFFFF; border-radius: 6px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800;">3</span>
+            <span>Study Habits &amp; Support Systems</span>
+        </div>
+        """
+        st.markdown(clean_html(sec3_html), unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
 
         with c1:
@@ -328,11 +335,13 @@ def render_predict_page() -> None:
             )
 
         # SECTION 4: Lifestyle, Health, and Attendance (8 features)
-        st.markdown(
-            "<div style='font-family: Georgia, serif; font-size: 1.1rem; font-weight: 600; color: #292D29; "
-            "border-bottom: 1px solid #E5E0D7; padding-bottom: 4px; margin-top: 18px; margin-bottom: 12px;'>4. Lifestyle, Health &amp; Attendance</div>",
-            unsafe_allow_html=True,
-        )
+        sec4_html = """
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem; font-weight: 700; color: #0A3E26; border-bottom: 2px solid #E2ECE5; padding-bottom: 6px; margin-top: 18px; margin-bottom: 14px;">
+            <span style="background: #15803D; color: #FFFFFF; border-radius: 6px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800;">4</span>
+            <span>Lifestyle, Health &amp; Attendance</span>
+        </div>
+        """
+        st.markdown(clean_html(sec4_html), unsafe_allow_html=True)
         c1, c2, c3, c4 = st.columns(4)
 
         with c1:
@@ -398,9 +407,9 @@ def render_predict_page() -> None:
                 step=1,
             )
 
-        st.markdown("<div style='height: 1.25rem;'></div>", unsafe_allow_html=True)
+        st.markdown(clean_html("<div style='height: 1rem;'></div>"), unsafe_allow_html=True)
         submitted = st.form_submit_button(
-            "Generate Assessment",
+            "Run Academic Risk Assessment →",
             type="primary",
             use_container_width=True,
         )
@@ -464,7 +473,7 @@ def render_assessment_results(
     db_saved: bool,
     db_message: str,
 ) -> None:
-    """Render the focused multi-model assessment panel."""
+    """Render the focused multi-model assessment panel in green dashboard style."""
     preds = result["predictions"]
     dt_at_risk = preds["decision_tree_at_risk"]
     rf_at_risk = preds["random_forest_at_risk"]
@@ -474,106 +483,126 @@ def render_assessment_results(
     dt_label = "At-Risk" if dt_at_risk == 1 else "Not At-Risk (Passing)"
     rf_label = "At-Risk" if rf_at_risk == 1 else "Not At-Risk (Passing)"
 
-    dt_pill = "status-pill status-pill-terracotta" if dt_at_risk == 1 else "status-pill status-pill-green"
-    rf_pill = "status-pill status-pill-terracotta" if rf_at_risk == 1 else "status-pill status-pill-green"
+    dt_pill = "status-pill status-pill-danger" if dt_at_risk == 1 else "status-pill status-pill-green"
+    rf_pill = "status-pill status-pill-danger" if rf_at_risk == 1 else "status-pill status-pill-green"
 
-    st.markdown("<hr/>", unsafe_allow_html=True)
-    st.markdown("<h2>Assessment Results Summary</h2>", unsafe_allow_html=True)
+    st.markdown(clean_html("<hr/>"), unsafe_allow_html=True)
+    st.markdown(clean_html("<h2>Assessment Results Summary</h2>"), unsafe_allow_html=True)
+
+    # Risk Meter Progress Gauge
+    gauge_card_html = """
+    <div class="dashboard-card" style="margin-bottom: 1.25rem;">
+        <div class="dashboard-card-header">
+            <span class="dashboard-card-title">Ensemble Risk Level Gauge</span>
+            <span class="status-pill status-pill-green">Continuous Risk Calibration</span>
+        </div>
+    """
+    st.markdown(clean_html(gauge_card_html), unsafe_allow_html=True)
+    render_risk_gauge(rf_risk_prob)
+    st.markdown(clean_html("</div>"), unsafe_allow_html=True)
 
     # Result Tiles (4 Columns)
     c1, c2, c3, c4 = st.columns(4)
 
     with c1:
-        st.markdown(
-            f"""
-            <div class="stat-tile">
-                <div class="stat-label">Decision Tree Classifier</div>
-                <div style="margin: 0.4rem 0;"><span class="{dt_pill}">{dt_label}</span></div>
-                <div class="stat-caption">Primary early-warning flag (62.7% recall)</div>
+        tile1 = f"""
+        <div class="stat-tile">
+            <div class="stat-tile-top">
+                <span class="stat-label">Decision Tree</span>
+                <span class="stat-icon-badge">🎯</span>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            <div style="margin: 0.6rem 0;"><span class="{dt_pill}">{dt_label}</span></div>
+            <div class="stat-caption">Primary early-warning flag (62.7% recall)</div>
+        </div>
+        """
+        st.markdown(clean_html(tile1), unsafe_allow_html=True)
 
     with c2:
-        st.markdown(
-            f"""
-            <div class="stat-tile">
-                <div class="stat-label">Random Forest Classifier</div>
-                <div style="margin: 0.4rem 0;"><span class="{rf_pill}">{rf_label}</span></div>
-                <div class="stat-caption">Conservative ensemble classification</div>
+        tile2 = f"""
+        <div class="stat-tile">
+            <div class="stat-tile-top">
+                <span class="stat-label">Random Forest</span>
+                <span class="stat-icon-badge">🌲</span>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            <div style="margin: 0.6rem 0;"><span class="{rf_pill}">{rf_label}</span></div>
+            <div class="stat-caption">Ensemble consensus classification</div>
+        </div>
+        """
+        st.markdown(clean_html(tile2), unsafe_allow_html=True)
 
     with c3:
-        st.markdown(
-            f"""
-            <div class="stat-tile">
-                <div class="stat-label">Random Forest Risk Probability</div>
-                <div class="stat-value">{rf_risk_prob * 100:.1f}%</div>
-                <div class="stat-caption">Estimated likelihood of G3 &lt; 10</div>
+        tile3 = f"""
+        <div class="stat-tile">
+            <div class="stat-tile-top">
+                <span class="stat-label">Risk Probability</span>
+                <span class="stat-icon-badge">📊</span>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            <div class="stat-value">{rf_risk_prob * 100:.1f}%</div>
+            <div class="stat-caption">Estimated likelihood of final mark &lt; 10</div>
+        </div>
+        """
+        st.markdown(clean_html(tile3), unsafe_allow_html=True)
 
     with c4:
-        st.markdown(
-            f"""
-            <div class="stat-tile">
-                <div class="stat-label">Estimated Final Grade (G3)</div>
-                <div class="stat-value">{estimated_g3:.1f} <span style="font-size: 1.1rem; color: #77776F;">/ 20</span></div>
-                <div class="stat-caption">Random Forest continuous regression</div>
+        tile4 = f"""
+        <div class="stat-tile">
+            <div class="stat-tile-top">
+                <span class="stat-label">Estimated Grade (G3)</span>
+                <span class="stat-icon-badge">📝</span>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            <div class="stat-value">{estimated_g3:.1f} <span style="font-size: 1rem; color: #71887C; font-weight: 500;">/ 20</span></div>
+            <div class="stat-caption">Random Forest continuous regression</div>
+        </div>
+        """
+        st.markdown(clean_html(tile4), unsafe_allow_html=True)
 
     # Check for model disagreement
     models_disagree = dt_at_risk != rf_at_risk
     reg_disagrees_dt = (estimated_g3 < 10.0 and dt_at_risk == 0) or (estimated_g3 >= 10.0 and dt_at_risk == 1)
 
     if models_disagree or reg_disagrees_dt:
-        st.markdown(
-            """
-            <div class="editorial-callout warning" style="margin-top: 1.25rem;">
-                <div class="editorial-callout-title">Model Disagreement Notice</div>
-                <div>
-                    The classification and regression models produced differing indicators for this student profile.
-                    This occurs because classification and continuous regression optimize different mathematical loss functions:
-                    <ul>
-                        <li>The <strong>Decision Tree Classifier</strong> prioritizes sensitivity (high recall) to avoid missing struggling students.</li>
-                        <li>The <strong>Random Forest Regressor</strong> predicts a conditional mean grade with an average margin of error (&plusmn;3.39 points).</li>
-                    </ul>
-                    These separate estimates should be evaluated together as a multi-perspective advisory signal.
-                </div>
+        disagree_html = """
+        <div class="dashboard-callout warning" style="margin-top: 1.25rem;">
+            <div class="dashboard-callout-title">Model Disagreement Advisory</div>
+            <div>
+                The classification and regression models generated differing assessment indicators for this profile.
+                This occurs because classification and continuous regression optimize different mathematical loss functions:
+                <ul>
+                    <li>The <strong>Decision Tree Classifier</strong> maximizes sensitivity (high recall) to avoid missing struggling students.</li>
+                    <li>The <strong>Random Forest Regressor</strong> estimates conditional mean grade with an average margin of error (&plusmn;3.39 points).</li>
+                </ul>
+                These separate estimates should be evaluated together as a multi-perspective advisory signal.
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        </div>
+        """
+        st.markdown(clean_html(disagree_html), unsafe_allow_html=True)
 
     # MongoDB persistence status pill
     if db_saved:
         st.markdown(
-            f"<div style='font-size: 0.85rem; color: #2E5A36; margin-top: 0.75rem;'>"
-            f"<strong>Database Status:</strong> Record for student <code>{student_id}</code> successfully saved to MongoDB "
-            f"<code>student_predictions</code>.</div>",
+            clean_html(
+                f"<div style='font-size: 0.85rem; color: #15803D; margin-top: 0.75rem; font-weight: 600;'>"
+                f"<strong>Database Status:</strong> Assessment record for student <code>{student_id}</code> saved to MongoDB "
+                f"<code>student_predictions</code>.</div>"
+            ),
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
-            f"<div style='font-size: 0.85rem; color: #9E2A2B; margin-top: 0.75rem;'>"
-            f"<strong>Database Status:</strong> {db_message}</div>",
+            clean_html(
+                f"<div style='font-size: 0.85rem; color: #B91C1C; margin-top: 0.75rem; font-weight: 600;'>"
+                f"<strong>Database Status:</strong> {db_message}</div>"
+            ),
             unsafe_allow_html=True,
         )
 
     # Advisory limitation disclaimer
     st.markdown(
-        "<div style='margin-top: 0.85rem; font-size: 0.78rem; color: #77776F; line-height: 1.4;'>"
-        "<strong>Advisory Status:</strong> All predictions are statistical estimates derived from non-grade attributes "
-        "and should be used as diagnostic guidance for academic advisors, not definitive or deterministic judgments of a student's potential."
-        "</div>",
+        clean_html(
+            "<div style='margin-top: 0.85rem; font-size: 0.78rem; color: #71887C; line-height: 1.45;'>"
+            "<strong>Advisory Status:</strong> All predictions are statistical estimates derived from pre-semester attributes "
+            "and should be used as diagnostic guidance for academic advisors, not definitive or deterministic judgments of student capability."
+            "</div>"
+        ),
         unsafe_allow_html=True,
     )
