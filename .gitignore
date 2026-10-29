@@ -21,6 +21,9 @@ htmlcov/
 # Saved models and serialized artifacts
 models/*.pkl
 models/*.joblib
+!models/decision_tree_classifier.joblib
+!models/random_forest_classifier.joblib
+!models/random_forest_regressor.joblib
 models/*.onnx
 models/*.h5
 !models/.gitkeep
